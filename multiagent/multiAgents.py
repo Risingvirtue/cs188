@@ -261,8 +261,41 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
           legal moves.
         """
         "*** YOUR CODE HERE ***"
+        numGhost = [gameState.getNumAgents() - 1]
+        currAction = ['test']
+        def maxValue(state, deep):
+            currValue = -9999
+            prevValue = currValue
+            pacmanActions = state.getLegalActions(0)
+            for action in pacmanActions:
+                successor = state.generateSuccessor(0,action)
+                currValue = max(currValue, value(successor, deep , 1))
+                if prevValue != currValue and state == gameState:
+                    currAction[0] = action
+                    prevValue = currValue
+            return currValue
+        def chance(state, deep, ghostNum):
+            sumValue = 0.0
+            ghostActions = state.getLegalActions(ghostNum)
+            numNodes = 0.0 + len(ghostActions)
+            p = 1.0 / numNodes
+            if ghostNum == numGhost[0]:
+                deep -= 1
+            for action in ghostActions:
+                successor = state.generateSuccessor(ghostNum, action)
+                newGhostNum = (ghostNum + 1) % (numGhost[0] + 1)
+                sumValue += p * value(successor, deep, newGhostNum)
+            return sumValue
+        def value(state, deep, ghostNum):
+            if state.isWin() or state.isLose() or deep == 0:
+                return self.evaluationFunction(state)
+            elif ghostNum == 0:
+                return maxValue(state, deep)
+            else:
+                return chance(state, deep, ghostNum)
+        value(gameState, self.depth, 0)
+        return currAction[0]
         util.raiseNotDefined()
-
 def betterEvaluationFunction(currentGameState):
     """
       Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
@@ -271,6 +304,41 @@ def betterEvaluationFunction(currentGameState):
       DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
+    from util import *
+    ghostStates = currentGameState.getGhostStates()
+    scaredTimes = [ghostState.scaredTimer for ghostState in ghostStates]
+    currPosition = currentGameState.getPacmanPosition()
+    oldFood = currentGameState.getFood()
+    foodList = oldFood.asList()
+    score = 0
+    pelletPQ = PriorityQueue()
+    order = []
+    counter = 0
+    for food in foodList:
+        manDist = manhattanDistance(currPosition, food)
+        if manDist == 1:
+            score += 25
+        pelletPQ.push(food, manDist)
+
+    while not pelletPQ.isEmpty() and counter != 2:
+        counter += 1
+        score += 10 / manhattanDistance(currPosition, pelletPQ.pop())
+    ghostPos = currentGameState.getGhostPositions()
+    scareTime = 999
+    for time in scaredTimes:
+        if scareTime > time:
+            scareTime = time
+    multiplier = -1
+    if scareTime > 10:
+        multiplier = 0
+    for ghost in ghostPos:
+        ghostDist = manhattanDistance(currPosition, ghost)
+        if ghostDist == 0:
+            score += 500 * multiplier
+        else:
+            score += (50/ghostDist) * multiplier
+
+    return score
     util.raiseNotDefined()
 
 # Abbreviation
