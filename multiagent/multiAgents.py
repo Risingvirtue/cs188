@@ -305,39 +305,41 @@ def betterEvaluationFunction(currentGameState):
     """
     "*** YOUR CODE HERE ***"
     from util import *
-    ghostStates = currentGameState.getGhostStates()
-    scaredTimes = [ghostState.scaredTimer for ghostState in ghostStates]
-    currPosition = currentGameState.getPacmanPosition()
-    oldFood = currentGameState.getFood()
-    foodList = oldFood.asList()
+    foodList = currentGameState.getFood().asList()
+    currPos = currentGameState.getPacmanPosition()
+    currGhostStates = currentGameState.getGhostStates()
+    ghosts = currentGameState.getGhostPositions()
+    scaredTimes = [ghostState.scaredTimer for ghostState in currGhostStates]
     score = 0
     pelletPQ = PriorityQueue()
     order = []
     counter = 0
+    distGhost = 0
+    closeFood = 0
+    whiteGhost = 0
+    currScore = scoreEvaluationFunction(currentGameState)
+    if currentGameState.isLose():
+        return -9999
+    if currentGameState.isWin():
+        return 9999
+    numFood = len(foodList)
+    numCapsules = len(currentGameState.getCapsules())
     for food in foodList:
-        manDist = manhattanDistance(currPosition, food)
-        if manDist == 1:
-            score += 25
+        manDist = manhattanDistance(currPos, food)
         pelletPQ.push(food, manDist)
-
-    while not pelletPQ.isEmpty() and counter != 2:
-        counter += 1
-        score += 10 / manhattanDistance(currPosition, pelletPQ.pop())
-    ghostPos = currentGameState.getGhostPositions()
-    scareTime = 999
-    for time in scaredTimes:
-        if scareTime > time:
-            scareTime = time
-    multiplier = -1
-    if scareTime > 10:
-        multiplier = 0
-    for ghost in ghostPos:
-        ghostDist = manhattanDistance(currPosition, ghost)
-        if ghostDist == 0:
-            score += 500 * multiplier
+    if numFood != 0:
+        closeFood = manhattanDistance(currPos, pelletPQ.pop())
+    ghostNum = 0
+    for ghost in ghosts:
+        manDist = manhattanDistance(currPos, ghost)
+        if manDist != 0 and scaredTimes[ghostNum] == 0:
+            distGhost += 1 / manDist
+        elif manDist != 0 and scaredTimes[ghostNum] > 0:
+            whiteGhost += manDist
         else:
-            score += (50/ghostDist) * multiplier
-
+            distGhost = 1
+        ghostNum += 1
+    score = currScore - 2 * distGhost - 2 * closeFood - 5 * numFood - 1 * whiteGhost - numCapsules * 18
     return score
     util.raiseNotDefined()
 
