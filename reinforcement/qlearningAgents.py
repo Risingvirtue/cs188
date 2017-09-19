@@ -43,7 +43,7 @@ class QLearningAgent(ReinforcementAgent):
         ReinforcementAgent.__init__(self, **args)
 
         "*** YOUR CODE HERE ***"
-        self.QValues = {}
+        self.QValues = util.Counter()
     def getQValue(self, state, action):
         """
           Returns Q(state,action)
@@ -51,13 +51,7 @@ class QLearningAgent(ReinforcementAgent):
           or the Q node value otherwise
         """
         "*** YOUR CODE HERE ***"
-        if state not in self.QValues:
-            self.QValues[state] = {}
-            for action in self.getLegalActions(state):
-                self.QValues[state][action] = 0.0
-            return 0.0
-        else:
-            return self.QValues[state][action]
+        return self.QValues[(state, action)]
         util.raiseNotDefined()
 
 
@@ -70,6 +64,8 @@ class QLearningAgent(ReinforcementAgent):
         """
         "*** YOUR CODE HERE ***"
         actions = self.getLegalActions(state)
+        if len(actions) == 0:
+            return 0
         return max([self.getQValue(state, action) for action in actions])
         util.raiseNotDefined()
 
@@ -84,21 +80,16 @@ class QLearningAgent(ReinforcementAgent):
         action = None
         "*** YOUR CODE HERE ***"
         #instantiates in dictionary if state is not in QValues
-        if state not in self.QValues:
-            self.QValues[state] = {}
-            for legalAction in legalActions:
-                self.QValues[state][legalAction] = 0.0
         #keeps track of best Q value and action pair
         if len(legalActions) == 0:
             return action
-        else:
-            bestQ = -999
-            for legalAction in legalActions:
-                q = self.QValues[state][legalAction]
-                if q > bestQ:
-                    bestQ = q
-                    action = legalAction
-            return action
+        bestQ = -999
+        for legalAction in legalActions:
+            q = self.getQValue(state , legalAction)
+            if q > bestQ:
+                bestQ = q
+                action = legalAction
+        return action
 
         util.raiseNotDefined()
 
@@ -136,19 +127,12 @@ class QLearningAgent(ReinforcementAgent):
         """
         "*** YOUR CODE HERE ***"
         #instantiates state if not in QValues
-        if state not in self.QValues:
-            actions = self.getLegalActions(state)
-            self.QValues[state] = {}
-            for a in actions:
-                self.QValues[state][a] = 0.0
+
         #Q Value iteration with weights 1 - alpha for previous values and alpha for sample
-        Qactions = self.QValues[state]
-        nextStateActions = self.getLegalActions(nextState)
-        maxQ = 0
-        if nextState in self.QValues:
-            maxQ = max([self.getQValue(nextState, act) for act in nextStateActions])
+        maxQ = self.computeValueFromQValues(nextState)
+
         sample = reward + self.discount * maxQ
-        Qactions[action] = (1 - self.alpha) * Qactions[action] + self.alpha * sample
+        self.QValues[(state, action)] = (1 - self.alpha) * self.QValues[(state, action)] + self.alpha * sample
         return
         util.raiseNotDefined()
 
@@ -203,7 +187,6 @@ class ApproximateQAgent(PacmanQAgent):
         self.featExtractor = util.lookup(extractor, globals())()
         PacmanQAgent.__init__(self, **args)
         self.weights = util.Counter()
-
     def getWeights(self):
         return self.weights
 
@@ -213,6 +196,11 @@ class ApproximateQAgent(PacmanQAgent):
           where * is the dotProduct operator
         """
         "*** YOUR CODE HERE ***"
+        qSum = 0.0
+        featureDict = self.featExtractor.getFeatures(state, action)
+        for key in featureDict.keys():
+            qSum += self.weights[key] * featureDict[key]
+        return qSum
         util.raiseNotDefined()
 
     def update(self, state, action, nextState, reward):
@@ -220,6 +208,15 @@ class ApproximateQAgent(PacmanQAgent):
            Should update your weights based on transition
         """
         "*** YOUR CODE HERE ***"
+        featureDict = self.featExtractor.getFeatures(state, action)
+        nextStateActions = self.getLegalActions(nextState)
+        nextStateQ = [self.getQValue(nextState, a) for a in nextStateActions]
+        for key in featureDict.keys():
+            if len(nextStateQ) == 0:
+                nextStateQ = [0]
+            difference = (reward + self.discount * max(nextStateQ)) - self.getQValue(state, action)
+            self.weights[key] += (self.alpha * difference * featureDict[key])
+        return
         util.raiseNotDefined()
 
     def final(self, state):
