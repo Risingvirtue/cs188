@@ -83,6 +83,12 @@ class QLearningAgent(ReinforcementAgent):
         legalActions = self.getLegalActions(state)
         action = None
         "*** YOUR CODE HERE ***"
+        #instantiates in dictionary if state is not in QValues
+        if state not in self.QValues:
+            self.QValues[state] = {}
+            for legalAction in legalActions:
+                self.QValues[state][legalAction] = 0.0
+        #keeps track of best Q value and action pair
         if len(legalActions) == 0:
             return action
         else:
@@ -111,8 +117,8 @@ class QLearningAgent(ReinforcementAgent):
         legalActions = self.getLegalActions(state)
         action = None
         "*** YOUR CODE HERE ***"
-        random = util.flipCoin(self.epsilon)
-        if random:
+        randomU = util.flipCoin(self.epsilon)
+        if randomU:
             return random.choice(legalActions)
         else:
             return self.computeActionFromQValues(state)
@@ -129,11 +135,13 @@ class QLearningAgent(ReinforcementAgent):
           it will be called on your behalf
         """
         "*** YOUR CODE HERE ***"
+        #instantiates state if not in QValues
         if state not in self.QValues:
             actions = self.getLegalActions(state)
             self.QValues[state] = {}
             for a in actions:
                 self.QValues[state][a] = 0.0
+        #Q Value iteration with weights 1 - alpha for previous values and alpha for sample
         Qactions = self.QValues[state]
         nextStateActions = self.getLegalActions(nextState)
         maxQ = 0
