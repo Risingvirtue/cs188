@@ -144,13 +144,6 @@ def joinFactors(factors):
         newF = jointwo(factors[0], factors[1])
         factors = [newF] + factors[2:]
     return factors[0]
-
-
-
-
-
-
-
 def eliminateWithCallTracking(callTrackingList=None):
 
     def eliminate(factor, eliminationVariable):
@@ -197,8 +190,32 @@ def eliminateWithCallTracking(callTrackingList=None):
                     "unconditionedVariables: " + str(factor.unconditionedVariables()))
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
 
+        variables =  factor.variableDomainsDict()
+        currDict = factor.variableDomainsDict()
+        newDict = {}
+        for key in currDict:
+            if key != eliminationVariable:
+                newDict[key] = currDict[key]
+
+        unCondVar = factor.unconditionedVariables()
+        condVar = factor.conditionedVariables()
+        if eliminationVariable in unCondVar:
+            unCondVar.remove(eliminationVariable)
+        if eliminationVariable in condVar:
+            condVar.remove(eliminationVariable)
+
+        newFactor = Factor(unCondVar, condVar, newDict)
+        elimVar = variables[eliminationVariable]
+
+        for combo in newFactor.getAllPossibleAssignmentDicts():
+            currSum = 0
+            for v in elimVar:
+                combo[eliminationVariable] = v
+                prob = factor.getProbability(combo)
+                currSum += prob
+            newFactor.setProbability(combo, currSum)
+        return newFactor
     return eliminate
 
 eliminate = eliminateWithCallTracking()
@@ -252,4 +269,22 @@ def normalize(factor):
                             str(factor))
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    unCond = factor.unconditionedVariables()
+    cond = factor.conditionedVariables()
+    currDict = factor.variableDomainsDict()
+    unCondList = [c for c in unCond]
+    for unC in unCondList:
+        if len(currDict[unC]) == 1:
+            cond.add(unC)
+            unCond.remove(unC)
+
+    newFactor = Factor(unCond, cond, currDict)
+    total = 0.0
+    for combo in factor.getAllPossibleAssignmentDicts():
+        total += factor.getProbability(combo)
+    if total == 0:
+        return None
+    for combo in factor.getAllPossibleAssignmentDicts():
+        currProb = factor.getProbability(combo)
+        newFactor.setProbability(combo, currProb / total)
+    return newFactor
