@@ -257,6 +257,7 @@ def fillObsCPT(bayesNet, gameState):
                         prob = 1 - PROB_FOOD_RED
                     else:
                         prob = 0
+                print assignment
                 currFactor.setProbability(assignment, prob)
             bayesNet.setCPT(obsVar, currFactor)
 
