@@ -101,20 +101,36 @@ def joinFactors(factors):
 
 
     "*** YOUR CODE HERE ***"
+    #helper function to join 2
     def jointwo(a ,b):
         aSet = a.unconditionedVariables().union(a.conditionedVariables())
         bSet = b.unconditionedVariables().union(b.conditionedVariables())
-        commonVar = aSet.intersection(bSet)
+        #gets common dictionary of two factors
         commonDict = combineDict(a.variableDomainsDict(), b.variableDomainsDict())
-        print commonDict
-        for c in commonVar:
-            pairs = a.getAllPossibleAssignmentDicts()
-            print pairs
-            for pair in pairs:
-                print pair.getkeys()
-                print b.getProbability(pair)
 
-        print 'intersect:' , commonVar
+        #finds unconditioned and conditioned variables in total
+        uncondVar = set()
+        conditionedVar = set()
+        for factor in [a,b]:
+            for unVar in factor.unconditionedVariables():
+                if unVar not in uncondVar:
+                    uncondVar.add(unVar)
+            for condVar in factor.conditionedVariables():
+                if condVar not in conditionedVar:
+                    conditionedVar.add(condVar)
+        #puts condVar intp uncondVar
+        currVar = [con for con in conditionedVar]
+        for c in currVar:
+            if c in uncondVar:
+                uncondVar.add(c)
+                conditionedVar.remove(c)
+        #creates a new factor and gives it the probabilities
+        newFactor = Factor(uncondVar, conditionedVar, commonDict)
+        for combo in newFactor.getAllPossibleAssignmentDicts():
+            prob = a.getProbability(combo) * b.getProbability(combo)
+            newFactor.setProbability(combo, prob)
+        return newFactor
+    #helperfunction to combine dictionaries
     def combineDict(Adict, Bdict):
         combinedDict = {}
         for aD in Adict:
@@ -122,30 +138,17 @@ def joinFactors(factors):
         for bD in Bdict:
             if bD not in Bdict:
                 combinedDict[bD] = Bdict[bD]
-
         return combinedDict
-    jointwo(factors[0], factors[1])
-    uncondVar = set()
-    conditionedVar = set()
-    for factor in factors:
-        for unVar in factor.unconditionedVariables():
-            if unVar not in uncondVar:
-                uncondVar.add(unVar)
-        for condVar in factor.conditionedVariables():
-            if condVar not in conditionedVar:
-                conditionedVar.add(unVar)
-    currVar = [con for con in conditionedVar]
-    for c in currVar:
-        if c in uncondVar:
-            uncondVar.add(c)
-            conditionedVar.remove(c)
-    print factors[0]
-    print factors[0].unconditionedVariables()
-    print factors[0].conditionedVariables()
-    print factors[1]
-    print factors[1].unconditionedVariables()
-    print factors[1].conditionedVariables()
-    util.raiseNotDefined()
+    #collapse factors
+    while len(factors) >= 2:
+        newF = jointwo(factors[0], factors[1])
+        factors = [newF] + factors[2:]
+    return factors[0]
+
+
+
+
+
 
 
 def eliminateWithCallTracking(callTrackingList=None):
