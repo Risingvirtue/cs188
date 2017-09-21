@@ -99,7 +99,6 @@ def joinFactors(factors):
                     "Input factors: \n" +
                     "\n".join(map(str, factors)))
 
-
     "*** YOUR CODE HERE ***"
     #helper function to join 2
     def jointwo(a ,b):
@@ -267,7 +266,6 @@ def normalize(factor):
                             "assignment of the \n" + "conditional variables, " + \
                             "so that total probability will sum to 1\n" +
                             str(factor))
-
     "*** YOUR CODE HERE ***"
     unCond = factor.unconditionedVariables()
     cond = factor.conditionedVariables()
@@ -277,7 +275,6 @@ def normalize(factor):
         if len(currDict[unC]) == 1:
             cond.add(unC)
             unCond.remove(unC)
-
     newFactor = Factor(unCond, cond, currDict)
     total = 0.0
     for combo in factor.getAllPossibleAssignmentDicts():

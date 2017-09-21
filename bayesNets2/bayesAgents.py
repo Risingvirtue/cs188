@@ -257,10 +257,9 @@ def fillObsCPT(bayesNet, gameState):
                         prob = 1 - PROB_FOOD_RED
                     else:
                         prob = 0
-                print assignment
+
                 currFactor.setProbability(assignment, prob)
             bayesNet.setCPT(obsVar, currFactor)
-
     return
 
 
@@ -460,9 +459,7 @@ class VPIAgent(BayesAgent):
             enterEliminationOrder = unknownVars + [X_POS_VAR, Y_POS_VAR]
             exploreEliminationOrder = [X_POS_VAR, Y_POS_VAR]
 
-            print evidence
-            print enterEliminationOrder
-            print exploreEliminationOrder
+    
             enterLeftValue, enterRightValue = \
                     self.computeEnterValues(evidence, enterEliminationOrder)
             exploreValue = self.computeExploreValue(evidence,
