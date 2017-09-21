@@ -278,6 +278,18 @@ def getMostLikelyFoodHousePosition(evidence, bayesNet, eliminationOrder):
     (This should be a very short method.)
     """
     "*** YOUR CODE HERE ***"
+    from inference import *
+    factor = inferenceByVariableElimination(bayesNet, FOOD_HOUSE_VAR, evidence, eliminationOrder)
+    bestProb = 0
+    position = 'test'
+    for choice in factor.getAllPossibleAssignmentDicts():
+        if factor.getProbability(choice) > bestProb:
+            position = choice
+            bestProb = factor.getProbability(choice)
+    for q in HOUSE_VALS:
+        if q in position:
+            return q
+    return position
     util.raiseNotDefined()
 
 
@@ -380,18 +392,29 @@ class VPIAgent(BayesAgent):
         rightExpectedValue = 0
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
+        from inference import *
+        factor = inferenceByVariableElimination(self.bayesNet, HOUSE_VARS, evidence, eliminationOrder)
+        Lprob = 0
+        Rprob = 0
+        for choice in factor.getAllPossibleAssignmentDicts():
+            if choice[FOOD_HOUSE_VAR] == TOP_LEFT_VAL and choice[GHOST_HOUSE_VAR] == TOP_RIGHT_VAL:
+                Lprob = factor.getProbability(choice)
+            if choice[FOOD_HOUSE_VAR] == TOP_RIGHT_VAL and choice[GHOST_HOUSE_VAR] == TOP_LEFT_VAL:
+                Rprob = factor.getProbability(choice)
+        leftExpectedValue = GHOST_COLLISION_REWARD * Rprob + WON_GAME_REWARD * Lprob
+        rightExpectedValue = GHOST_COLLISION_REWARD * Lprob + WON_GAME_REWARD * Rprob
         return leftExpectedValue, rightExpectedValue
 
     def getExplorationProbsAndOutcomes(self, evidence):
         unknownVars = [o for o in self.obsVars if o not in evidence]
+        unknownVars = unknownVars[4:]
         assert len(unknownVars) == 7
         assert len(set(evidence.keys()) & set(unknownVars)) == 0
         firstUnk = unknownVars[0]
         restUnk = unknownVars[1:]
 
         unknownVars = [o for o in self.obsVars if o not in evidence]
+        unknownVars = unknownVars[4:]
         eliminationOrder = unknownVars + [X_POS_VAR, Y_POS_VAR]
         houseMarginals = inference.inferenceByVariableElimination(self.bayesNet,
                 [FOOD_HOUSE_VAR, GHOST_HOUSE_VAR], evidence, eliminationOrder)
@@ -446,8 +469,9 @@ class VPIAgent(BayesAgent):
         expectedValue = 0
 
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
-
+        newEvidence = self.getExplorationProbsAndOutcomes(evidence)
+        for e in newEvidence:
+            expectedValue += e[0] *  max(self.computeEnterValues(e[1], enterEliminationOrder))
         return expectedValue
 
     def getAction(self, gameState):
@@ -459,7 +483,7 @@ class VPIAgent(BayesAgent):
             enterEliminationOrder = unknownVars + [X_POS_VAR, Y_POS_VAR]
             exploreEliminationOrder = [X_POS_VAR, Y_POS_VAR]
 
-    
+
             enterLeftValue, enterRightValue = \
                     self.computeEnterValues(evidence, enterEliminationOrder)
             exploreValue = self.computeExploreValue(evidence,
