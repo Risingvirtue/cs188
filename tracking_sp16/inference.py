@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -75,6 +75,11 @@ class DiscreteDistribution(dict):
         {}
         """
         "*** YOUR CODE HERE ***"
+        currSum = self.total()
+        if currSum == 0:
+            return
+        for key in self.keys():
+            self[key] = self.__getitem__(key) / currSum
 
     def sample(self):
         """
@@ -98,6 +103,19 @@ class DiscreteDistribution(dict):
         0.0
         """
         "*** YOUR CODE HERE ***"
+        currTotal = self.total()
+        runningMap = []
+        currSum = 0
+        for key in self.keys():
+            currSum += self.__getitem__(key) / currTotal
+            runningMap += [(key, currSum)]
+        rand = random.random()
+        for pair in runningMap:
+            if rand <= pair[1]:
+                return pair[0]
+        return
+
+
 
 
 class InferenceModule:
@@ -167,7 +185,19 @@ class InferenceModule:
         Return the probability P(noisyDistance | pacmanPosition, ghostPosition).
         """
         "*** YOUR CODE HERE ***"
-
+        from util import *
+        from busters import *
+        if noisyDistance == None:
+            if ghostPosition == jailPosition:
+                return 1
+            else:
+                return 0
+        else:
+            if ghostPosition == jailPosition:
+                return 0
+            trueDist = manhattanDistance(pacmanPosition, ghostPosition)
+            distribution = busters.getObservationProbability(noisyDistance, trueDist)
+            return distribution
     def setGhostPosition(self, gameState, ghostPosition, index):
         """
         Set the position of the ghost for this inference module to the specified
@@ -274,6 +304,13 @@ class ExactInference(InferenceModule):
         position is known.
         """
         "*** YOUR CODE HERE ***"
+        pacmanPosition = gameState.getPacmanPosition()
+        jailPosition = self.getJailPosition()
+        for ghostPosition in self.allPositions + [jailPosition]:
+
+            prob = self.getObservationProb(observation, pacmanPosition, ghostPosition, jailPosition)
+            self.beliefs[ghostPosition] = self.beliefs[ghostPosition] * prob
+
         self.beliefs.normalize()
 
     def elapseTime(self, gameState):
@@ -286,6 +323,21 @@ class ExactInference(InferenceModule):
         current position is known.
         """
         "*** YOUR CODE HERE ***"
+        from util import *
+        newDistribution = Counter()
+        #make sure all position prob equal to 0
+        for ghostPosition in self.allPositions:
+            newDistribution[ghostPosition] = 0
+
+        #splay the current prob over new distribution
+        for ghostPosition in self.allPositions:
+            newPosDist = self.getPositionDistribution(gameState, ghostPosition)
+            for pos in newPosDist:
+                splay = newPosDist[pos] * self.beliefs[ghostPosition]
+                newDistribution[pos] += splay
+        #copy over dictionary
+        for key in newDistribution:
+            self.beliefs[key] = newDistribution[key]
 
     def getBeliefDistribution(self):
         return self.beliefs
