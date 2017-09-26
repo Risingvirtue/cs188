@@ -61,17 +61,57 @@ class MiraClassifier:
         representing a vector of values.
         """
         "*** YOUR CODE HERE ***"
-        for i in range(len(trainingData)):
-            data = trainingData[i]
-            score = 0
-            bestScore = 0
-            bestLabel = 'test'
-            for y in self.legalLabels:
-                score = data * self.weights[y]
-                if score > bestScore or bestLabel == 'test':
-                    bestScore = score
-                    bestLabel = y
-        util.raiseNotDefined()
+        bestC = 'test'
+        bestAccuracy = 0
+        bestWeight = {}
+        for c in Cgrid:
+            print 'testing for c: ' , c
+            self.weights = {}
+            for label in self.legalLabels:
+                self.weights[label] = util.Counter()
+            for j in range(self.max_iterations):
+                for i in range(len(trainingData)):
+                    data = trainingData[i]
+                    correct  = trainingLabels[i]
+                    score = 0
+                    maxScore = 0
+                    bestLabel = 'test'
+                    for l in self.legalLabels:
+                        score = data * self.weights[l]
+                        if score > maxScore or bestLabel == 'test':
+                            maxScore = score
+                            bestLabel = l
+                    if bestLabel != correct:
+                        numerator = (self.weights[correct] - self.weights[bestLabel]) * data + 1.0
+                        num = data * data
+                        right = numerator / (2 * num)
+                        tao = min(c, right)
+                        temp = data.copy()
+                        for entry in temp:
+                            temp[entry] = temp[entry] * tao
+                        self.weights[bestLabel] = self.weights[bestLabel] - temp
+                        self.weights[correct] += temp
+            numData = len(validationData)
+            numCorrect = 0.0
+            for j in range(len(validationData)):
+                datum = validationData[j]
+                score = 0
+                maxScore = 0
+                bestLabel = 'test'
+                for l in self.legalLabels:
+                    score = data * self.weights[l]
+                    if score > maxScore or bestLabel == 'test':
+                        maxScore = score
+                        bestLabel = l
+                correctLabel = validationLabels[j]
+                if bestLabel == correctLabel:
+                    numCorrect += 1.0
+            currAccuracy = numCorrect / numData
+            if currAccuracy > bestAccuracy:
+                bestAccuracy = currAccuracy
+                bestC = c
+                bestWeight = self.weights
+        self.weights = bestWeight
 
     def classify(self, data ):
         """

@@ -50,7 +50,7 @@ class PerceptronClassifier:
         self.features = trainingData[0].keys() # could be useful later
         # DO NOT ZERO OUT YOUR WEIGHTS BEFORE STARTING TRAINING, OR
         # THE AUTOGRADER WILL LIKELY DEDUCT POINTS.
-
+        return
         for iteration in range(self.max_iterations):
             print "Starting iteration ", iteration, "..."
             for i in range(len(trainingData)):
@@ -60,13 +60,13 @@ class PerceptronClassifier:
                 maxScore = 0
                 bestLabel = 'test'
                 for l in self.legalLabels:
-                    score = data * self.weights[y]
+                    score = data * self.weights[l]
                     if score > maxScore or bestLabel == 'test':
                         maxScore = score
                         bestLabel = l
                 correct = trainingLabels[i]
                 if bestLabel != correct:
-                    self.weights[y] = self.weights[y] - data
+                    self.weights[l] = self.weights[l] - data
                     self.weights[correct] += data
 
     def classify(self, data ):
