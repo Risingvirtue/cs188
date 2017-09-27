@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-# 
+#
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -54,7 +54,6 @@ def basicFeatureExtractorFace(datum):
     each pixel in the provided datum is an edge (1) or no edge (0)
     """
     a = datum.getPixels()
-
     features = util.Counter()
     for x in range(FACE_DATUM_WIDTH):
         for y in range(FACE_DATUM_HEIGHT):
@@ -64,6 +63,112 @@ def basicFeatureExtractorFace(datum):
                 features[(x,y)] = 0
     return features
 
+def numConnected(activePixels):
+    from util import *
+    printer = ImagePrinter(DIGIT_DATUM_WIDTH, DIGIT_DATUM_HEIGHT)
+    mapToInt = {}
+    IntToPixel = {}
+    currentConnect = []
+    counter = 0
+    for pixel in activePixels:
+        mapToInt[pixel] = counter
+        IntToPixel[counter] = pixel
+        currentConnect += [counter]
+        counter += 1
+    for i in range(counter):
+        currPixel = IntToPixel[i]
+        for j in range(i + 1, counter):
+            testPixel = IntToPixel[j]
+            if manhattanDistance(currPixel, testPixel) == 1:
+                for k in range(len(currentConnect)):
+                    if currentConnect[k] == currentConnect[j]:
+                        currentConnect[k] = currentConnect[i]
+
+    connectSet = set()
+    for i in range(len(currentConnect)):
+        connectSet.add(currentConnect[i])
+    return len(connectSet)
+def numLoops(nonActivePixels):
+    from util import *
+    printer = ImagePrinter(DIGIT_DATUM_WIDTH, DIGIT_DATUM_HEIGHT)
+    mapToInt = {}
+    IntToPixel = {}
+    currentConnect = []
+    counter = 0
+    for pixel in nonActivePixels:
+        mapToInt[pixel] = counter
+        IntToPixel[counter] = pixel
+        currentConnect += [counter]
+        counter += 1
+    for i in range(counter):
+        currPixel = IntToPixel[i]
+        for j in range(i + 1, counter):
+            testPixel = IntToPixel[j]
+            if manhattanDistance(currPixel, testPixel) == 1:
+                for k in range(len(currentConnect)):
+                    if currentConnect[k] == currentConnect[j]:
+                        currentConnect[k] = currentConnect[i]
+    connectSet = set()
+    for i in range(len(currentConnect)):
+        connectSet.add(currentConnect[i])
+    return len(connectSet) - 1
+
+def maxWidth(activePixels):
+    printer = ImagePrinter(DIGIT_DATUM_WIDTH, DIGIT_DATUM_HEIGHT)
+    maxW = 0
+    lowH, maxH = maxHeight(activePixels)
+    middle = (lowH + maxH) / 2
+    maxW = 0
+    maxWLower = 0
+    for h in range(lowH, middle):
+        currW = 0
+        for p in activePixels:
+            a, b = p
+            if p[1] == h and (a+ 1, b) in activePixels:
+                currW += 1
+        if maxW < currW:
+            maxW = currW
+    for h in range(middle, maxH):
+        currW = 0
+        for p in activePixels:
+            a, b = p
+            if p[1] == h and (a+ 1, b) in activePixels:
+                currW += 1
+        if maxWLower < currW:
+            maxWLower = currW
+    return [maxW, maxWLower]
+def maxHeight(activePixels):
+    maxH = 0
+    lowH = DIGIT_DATUM_HEIGHT
+    for p in activePixels:
+        if p[1] > maxH:
+            maxH = p[1]
+        if p[1] < lowH:
+            lowH = p[1]
+    return [lowH, maxH]
+def percentAbove(activePixels):
+    middle = DIGIT_DATUM_HEIGHT / 2
+    upper = middle / 2
+    lower = middle + upper
+    numPixels = len(activePixels)
+    percent = []
+    for quarter in [upper, middle, lower]:
+        count = 0.0
+        for pixel in activePixels:
+            if pixel[1] < quarter:
+                count += 1.0
+        percent += [count / numPixels]
+    return percent
+def numMiddlePixel(activePixels):
+    low, high = maxHeight(activePixels)
+    numMid = 0
+    for i in range(len(activePixels) - 1):
+        currPixel = activePixels[i]
+        nextPixel = activePixels[i+1]
+        if currPixel[1] == nextPixel[1]:
+            diff =  nextPixel[0] - currPixel[0] - 1
+            numMid += diff
+    return numMid
 def enhancedFeatureExtractorDigit(datum):
     """
     Your feature extraction playground.
@@ -76,10 +181,26 @@ def enhancedFeatureExtractorDigit(datum):
     ##
     """
     features =  basicFeatureExtractorDigit(datum)
-
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    printer = ImagePrinter(DIGIT_DATUM_WIDTH, DIGIT_DATUM_HEIGHT)
 
+    activePixels = []
+    nonActivePixels = []
+    for w in range(DIGIT_DATUM_WIDTH):
+        for h in range(DIGIT_DATUM_HEIGHT):
+            p = (h, w)
+            if features[p] == 1:
+                activePixels += [p]
+            else:
+                nonActivePixels += [p]
+    numMid = numMiddlePixel(activePixels)
+    for i in range(100):
+        features['numMid == ' + str(i)] = numMid == i
+    low, high = maxWidth(activePixels)
+    #loops = numLoops(nonActivePixels) > 0
+    for i in range(DIGIT_DATUM_WIDTH):
+            features[i] = low == i
+            features[-i] = high == i
     return features
 
 
@@ -166,16 +287,17 @@ def analysis(classifier, guesses, testLabels, testData, rawTestData, printImage)
 
     # Put any code here...
     # Example of use:
-    # for i in range(len(guesses)):
-    #     prediction = guesses[i]
-    #     truth = testLabels[i]
-    #     if (prediction != truth):
-    #         print "==================================="
-    #         print "Mistake on example %d" % i
-    #         print "Predicted %d; truth is %d" % (prediction, truth)
-    #         print "Image: "
-    #         print rawTestData[i]
-    #         break
+    print "check for why"
+    for i in range(len(guesses)):
+        prediction = guesses[i]
+        truth = testLabels[i]
+        if (prediction != truth):
+            print "==================================="
+            print "Mistake on example %d" % i
+            print "Predicted %d; truth is %d" % (prediction, truth)
+            print "Image: "
+            print rawTestData[i]
+        break
 
 
 ## =====================
@@ -364,7 +486,7 @@ def runClassifier(args, options):
     featureFunction = args['featureFunction']
     classifier = args['classifier']
     printImage = args['printImage']
-    
+
     # Load data
     numTraining = options.training
     numTest = options.test
